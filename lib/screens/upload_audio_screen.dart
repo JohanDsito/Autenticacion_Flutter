@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
-import '../services/gemini_service.dart'; 
+import '../services/gemini_service.dart';
 
 class UploadAudioScreen extends StatefulWidget {
   const UploadAudioScreen({super.key});
@@ -48,18 +48,13 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
           '${DateTime.now().millisecondsSinceEpoch}_${audioFile!.path.split('/').last}';
       final filePath = 'audios/${user.id}/$fileName';
 
-
       await _supabase.storage.from('audios').upload(filePath, audioFile!);
-
-
       final publicUrl = _supabase.storage.from('audios').getPublicUrl(filePath);
 
- 
       final aiData =
           await GeminiService.generateTitleAndTagsFromFilename(fileName);
       final aiTitle = aiData['title'] ?? 'Audio sin título';
       final aiTags = aiData['tags'] ?? 'sin etiquetas';
-
 
       await _supabase.from('audios').insert({
         'user_id': user.id,
@@ -73,13 +68,20 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Audio subido con éxito: $aiTitle')),
+        SnackBar(
+          backgroundColor: Colors.green.shade600,
+          content: Text('✅ Audio subido con éxito: $aiTitle'),
+        ),
       );
+
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al subir audio: $e')),
+        SnackBar(
+          backgroundColor: Colors.red.shade600,
+          content: Text('❌ Error al subir audio: $e'),
+        ),
       );
     } finally {
       if (mounted) {
@@ -93,35 +95,92 @@ class _UploadAudioScreenState extends State<UploadAudioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Subir Audio')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (audioFile != null)
-              Text('Archivo seleccionado: ${audioFile!.path.split('/').last}')
-            else
-              const Text('Ningún archivo seleccionado'),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton.icon(
-              onPressed: _pickAudio,
-              icon: const Icon(Icons.audiotrack),
-              label: const Text('Seleccionar Audio'),
+      backgroundColor: Colors.indigo.shade50,
+      appBar: AppBar(
+        title: const Text('Subir Audio'),
+        centerTitle: true,
+        backgroundColor: Colors.indigo.shade600,
+        elevation: 5,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.indigo.shade100],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-
-            const SizedBox(height: 20),
-
-            ElevatedButton.icon(
-              onPressed: loading ? null : _uploadAudio,
-              icon: const Icon(Icons.cloud_upload),
-              label: loading
-                  ? const CircularProgressIndicator()
-                  : const Text('Subir Audio'),
-            ),
-          ],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.indigo.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_upload_rounded,
+                  size: 90, color: Colors.indigo.shade400),
+              const SizedBox(height: 20),
+              Text(
+                audioFile != null
+                    ? 'Archivo seleccionado:\n${audioFile!.path.split('/').last}'
+                    : 'Selecciona un archivo de audio para subir',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: loading ? null : _pickAudio,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo.shade400,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                ),
+                icon: const Icon(Icons.audiotrack),
+                label: const Text(
+                  'Seleccionar Audio',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: loading ? null : _uploadAudio,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade500,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                ),
+                icon: const Icon(Icons.cloud_done),
+                label: loading
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text(
+                        'Subir Audio',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
